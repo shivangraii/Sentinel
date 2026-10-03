@@ -1,0 +1,40 @@
+# Default (non-secret) settings. Environment variables (see .env.example) override these.
+llm:
+  provider: gemini
+  model: gemini-2.5-flash
+  temperature: 0.1
+
+embeddings:
+  provider: sentence-transformers   # sentence-transformers | hash
+  model: BAAI/bge-small-en-v1.5
+
+reranker:
+  provider: cross-encoder           # cross-encoder | lexical
+  model: BAAI/bge-reranker-base
+
+search:
+  provider: duckduckgo              # duckduckgo | tavily | none
+  max_results: 5
+
+retrieval:
+  chunk_size: 180        # words per chunk (approximate tokens)
+  chunk_overlap: 40
+  top_k_dense: 12
+  top_k_bm25: 12
+  top_k_final: 5
+  rrf_k: 60
+
+agent:
+  max_loops: 3           # critic -> retry cycles
+  max_tool_steps: 4      # tool calls per sub-task
+  max_tool_calls_per_run: 14
+  max_runtime_s: 300
+  critic_threshold: 0.8  # min fraction of supported claims to pass
+  require_approval: false
+
+paths:
+  storage_dir: storage
+  raw_dir: data/raw
+  db_path: data/sample.db
+  reports_dir: data/reports
+  traces_dir: traces

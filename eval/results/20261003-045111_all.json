@@ -1,0 +1,122 @@
+{
+  "stamp": "20261003-045111",
+  "retrieval": {
+    "all document questions": {
+      "questions": 30,
+      "embeddings": "hash",
+      "reranker": "lexical",
+      "results": {
+        "dense only": {
+          "source_hit@1": 0.667,
+          "source_hit@3": 0.867,
+          "source_hit@5": 0.967,
+          "answer_chunk_recall@1": 0.6,
+          "answer_chunk_recall@3": 0.767,
+          "answer_chunk_recall@5": 0.867,
+          "MRR@5 (answer chunk)": 0.705
+        },
+        "bm25 only": {
+          "source_hit@1": 0.967,
+          "source_hit@3": 1.0,
+          "source_hit@5": 1.0,
+          "answer_chunk_recall@1": 0.933,
+          "answer_chunk_recall@3": 0.967,
+          "answer_chunk_recall@5": 0.967,
+          "MRR@5 (answer chunk)": 0.95
+        },
+        "hybrid (RRF)": {
+          "source_hit@1": 0.867,
+          "source_hit@3": 1.0,
+          "source_hit@5": 1.0,
+          "answer_chunk_recall@1": 0.767,
+          "answer_chunk_recall@3": 0.967,
+          "answer_chunk_recall@5": 0.967,
+          "MRR@5 (answer chunk)": 0.85
+        },
+        "hybrid + rerank": {
+          "source_hit@1": 0.967,
+          "source_hit@3": 1.0,
+          "source_hit@5": 1.0,
+          "answer_chunk_recall@1": 0.933,
+          "answer_chunk_recall@3": 0.967,
+          "answer_chunk_recall@5": 0.967,
+          "MRR@5 (answer chunk)": 0.95
+        }
+      }
+    },
+    "paraphrased (hard) questions only": {
+      "questions": 15,
+      "embeddings": "hash",
+      "reranker": "lexical",
+      "results": {
+        "dense only": {
+          "source_hit@1": 0.467,
+          "source_hit@3": 0.733,
+          "source_hit@5": 0.933,
+          "answer_chunk_recall@1": 0.333,
+          "answer_chunk_recall@3": 0.533,
+          "answer_chunk_recall@5": 0.733,
+          "MRR@5 (answer chunk)": 0.477
+        },
+        "bm25 only": {
+          "source_hit@1": 0.933,
+          "source_hit@3": 1.0,
+          "source_hit@5": 1.0,
+          "answer_chunk_recall@1": 0.867,
+          "answer_chunk_recall@3": 0.933,
+          "answer_chunk_recall@5": 0.933,
+          "MRR@5 (answer chunk)": 0.9
+        },
+        "hybrid (RRF)": {
+          "source_hit@1": 0.733,
+          "source_hit@3": 1.0,
+          "source_hit@5": 1.0,
+          "answer_chunk_recall@1": 0.533,
+          "answer_chunk_recall@3": 0.933,
+          "answer_chunk_recall@5": 0.933,
+          "MRR@5 (answer chunk)": 0.7
+        },
+        "hybrid + rerank": {
+          "source_hit@1": 0.933,
+          "source_hit@3": 1.0,
+          "source_hit@5": 1.0,
+          "answer_chunk_recall@1": 0.867,
+          "answer_chunk_recall@3": 0.933,
+          "answer_chunk_recall@5": 0.933,
+          "MRR@5 (answer chunk)": 0.9
+        }
+      }
+    }
+  },
+  "agent": {
+    "questions": 50,
+    "llm": "fake:gemini-2.5-flash",
+    "offline": true,
+    "summary": {
+      "naive RAG (dense, 1 call)": {
+        "accuracy_all": 0.08,
+        "accuracy_doc": 0.133,
+        "accuracy_sql": 0.0,
+        "avg_latency_s": 0.0,
+        "avg_llm_calls": 1
+      },
+      "hybrid RAG (RRF+rerank, 1 call)": {
+        "accuracy_all": 0.18,
+        "accuracy_doc": 0.267,
+        "accuracy_sql": 0.05,
+        "avg_latency_s": 0.0,
+        "avg_llm_calls": 1
+      },
+      "agentic (Sentinel)": {
+        "accuracy_all": 0.26,
+        "accuracy_doc": 0.267,
+        "accuracy_sql": 0.25,
+        "avg_latency_s": 0.03,
+        "avg_llm_calls": 6.9,
+        "avg_critic_score": 1.0,
+        "critic_pass_rate": 1.0,
+        "avg_tool_calls": 1.4
+      }
+    }
+  }
+}

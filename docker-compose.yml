@@ -1,0 +1,32 @@
+# docker compose up --build
+#   API: http://localhost:8000/docs     UI: http://localhost:8501
+# No API key? set SENTINEL_OFFLINE=1 in .env for the offline demo mode.
+services:
+  api:
+    build: .
+    env_file: .env
+    ports: ["8000:8000"]
+    volumes:
+      - ./storage:/app/storage
+      - ./data/raw:/app/data/raw
+      - ./data/reports:/app/data/reports
+      - ./traces:/app/traces
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  ui:
+    build: .
+    command: ["streamlit", "run", "ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    environment:
+      SENTINEL_API_URL: http://api:8000
+    ports: ["8501:8501"]
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
