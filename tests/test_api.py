@@ -78,3 +78,12 @@ def test_upload_and_ingest(client, tmp_path):
 def test_episodes_recorded(client):
     eps = client.get("/episodes").json()
     assert eps and "query" in eps[0]
+
+
+def test_public_demo_blocks_writes(client, monkeypatch):
+    monkeypatch.setenv("SENTINEL_PUBLIC_DEMO", "1")
+    assert client.get("/health").json()["public_demo"] is True
+    assert client.post("/ingest", json={"reset": True}).status_code == 403
+    assert client.post("/upload", files={"file": ("x.md", b"# hi")}).status_code == 403
+    # reads / research still work
+    assert client.get("/episodes").status_code == 200

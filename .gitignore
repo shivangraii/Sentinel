@@ -9,3 +9,10 @@ storage/
 traces/
 data/reports/*.md
 !data/reports/.gitkeep
+data/raw/uploads/
+.DS_Store
+.idea/
+.vscode/
+*.zip
+.streamlit/secrets.toml
+secrets.toml

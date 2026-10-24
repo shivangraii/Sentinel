@@ -12,6 +12,7 @@ GET  /health
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
 
@@ -40,6 +41,16 @@ app = FastAPI(title="Sentinel", version=__version__, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
+def public_demo() -> bool:
+    """SENTINEL_PUBLIC_DEMO=1 locks down write endpoints (/upload, /ingest) for an open, unauthenticated deployment."""
+    return os.getenv("SENTINEL_PUBLIC_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _require_writable() -> None:
+    if public_demo():
+        raise HTTPException(status_code=403, detail="Disabled in public demo mode (SENTINEL_PUBLIC_DEMO=1).")
+
+
 def _sse(events: Iterator[dict]) -> Iterator[str]:
     try:
         for ev in events:
@@ -54,7 +65,7 @@ def health() -> dict:
     return {
         "status": "ok", "version": __version__, "llm": f"{s.llm_provider}:{s.llm_model}",
         "embeddings": s.embeddings_provider, "reranker": s.reranker_provider,
-        "search": s.search_provider, "offline": s.offline,
+        "search": s.search_provider, "offline": s.offline, "public_demo": public_demo(),
     }
 
 
@@ -91,12 +102,15 @@ def approve_stream(req: ApproveRequest) -> StreamingResponse:
 
 @app.post("/ingest")
 def ingest(req: IngestRequest | None = None) -> dict:
+    _require_writable()
     return ingest_directory(reset=bool(req and req.reset))
 
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)) -> dict:
     from pathlib import Path
+
+    _require_writable()
 
     name = Path(file.filename or "upload").name
     if Path(name).suffix.lower() not in SUPPORTED:

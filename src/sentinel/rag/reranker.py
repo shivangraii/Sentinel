@@ -6,6 +6,7 @@ from collections import Counter
 from functools import lru_cache
 from typing import Protocol
 
+from sentinel import gpu
 from sentinel.config import Settings, get_settings
 from sentinel.rag.text import tokenize
 
@@ -45,12 +46,21 @@ class CrossEncoderReranker:
                 'sentence-transformers not installed. Run: pip install "sentinel[embeddings]" '
                 "or set SENTINEL_RERANKER=lexical"
             ) from e
-        self.model = CrossEncoder(model_name)
+        self.model = CrossEncoder(model_name, device="cpu")  # moved to GPU only inside a ZeroGPU window
+        self._key = f"rerank:{model_name}"
+        gpu.register(self._key, self._predict)
+
+    def _predict(self, payload: tuple[str, list[str]], on_gpu: bool) -> list[float]:
+        query, passages = payload
+        return gpu.with_device(
+            self.model, on_gpu,
+            lambda: [float(x) for x in self.model.predict([(query, p) for p in passages])],
+        )
 
     def score(self, query: str, passages: list[str]) -> list[float]:
         if not passages:
             return []
-        return [float(x) for x in self.model.predict([(query, p) for p in passages])]
+        return gpu.run(self._key, (query, passages))
 
 
 @lru_cache(maxsize=2)

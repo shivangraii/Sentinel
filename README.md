@@ -1,5 +1,18 @@
 # 🛰️ Sentinel: Multi-Agent Deep Research Platform
 
+[![CI](https://github.com/shivangraii/Sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/shivangraii/Sentinel/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+[![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm.svg)](https://huggingface.co/spaces/YOUR_HF_USERNAME/sentinel)
+
+> A research agent that **doesn't just answer, it audits itself**: every sentence must cite evidence, and a critic
+> verifies each claim against its sources before the report is returned.
+
+<!-- TODO: add a screenshot or GIF of the Streamlit UI here, e.g. docs/img/demo.gif
+![Sentinel UI](docs/img/demo.gif) -->
+
+**Contents:** [Quickstart](#quickstart) · [Deploy](#deploy) · [Evaluation](#evaluation) · [Testing](#testing) · [Project layout](#project-layout) · [Known limitations](#known-limitations-read-before-claiming-anything)
+
 Sentinel takes a research question, plans it, researches it with **hybrid RAG + web/arXiv + SQL/Python tools**,
 writes a cited report, and then **checks its own claims against the evidence** before returning anything.
 It is built with LangGraph, ChromaDB, FastAPI and Streamlit, and the whole pipeline runs **offline with no API key**
@@ -40,7 +53,7 @@ question ─► recall ─► planner ─► approve_plan (optional human-in-the
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 sentinel demo                  # full graph run with the offline fake LLM
-pytest                         # 49 tests, all offline
+pytest                         # 54 tests, all offline
 ```
 `sentinel demo` runs the real graph, retrieval, SQL tool and critic. Only the *language model* is a deterministic
 stand-in that copies retrieved sentences, so reports in this mode are extractive, not intelligent.
@@ -55,10 +68,11 @@ sentinel ask "..." --approve                         # pause to approve/edit the
 ```
 Provider model names change over time: edit `SENTINEL_LLM_MODEL` in `.env` if a default stops working.
 
-### 3. API + UI
+### 3. UI and API
 ```bash
-sentinel serve                       # http://localhost:8000/docs
-streamlit run ui/app.py              # http://localhost:8501
+pip install gradio && python app.py  # Gradio UI (what Hugging Face runs): http://localhost:7860
+sentinel serve                       # FastAPI: http://localhost:8000/docs
+streamlit run ui/app.py              # alternative Streamlit UI on top of the API: http://localhost:8501
 # or:  docker compose up --build     (set SENTINEL_OFFLINE=1 in .env for a keyless demo)
 ```
 
@@ -75,20 +89,18 @@ curl -s localhost:8000/approve -H 'content-type: application/json' \
 Endpoints: `POST /research`, `POST /research/stream` (SSE), `POST /approve`, `POST /approve/stream`, `POST /ingest`,
 `POST /upload`, `GET /episodes`, `GET /health`.
 
-## Configuration
-`configs/settings.yaml` holds defaults; environment variables (`.env.example`) override them.
+## Deploy
 
-| Variable | Meaning |
+| Target | How |
 |---|---|
-| `SENTINEL_LLM_PROVIDER` / `SENTINEL_LLM_MODEL` | `gemini`, `groq`, `ollama`, `anthropic`, or `fake` |
-| `SENTINEL_EMBEDDINGS` | `sentence-transformers` (default, `BAAI/bge-small-en-v1.5`) or `hash` (offline) |
-| `SENTINEL_RERANKER` | `cross-encoder` or `lexical` |
-| `SENTINEL_SEARCH` | `duckduckgo`, `tavily`, or `none` |
-| `SENTINEL_REQUIRE_APPROVAL` | default for plan approval |
-| `SENTINEL_MAX_LOOPS` | critic retry cap (default 3) |
-| `SENTINEL_OFFLINE=1` | forces fake LLM + hash embeddings + lexical reranker + no web search |
+| **Hugging Face Space (Gradio + ZeroGPU)**, free tier | Create a Gradio Space with ZeroGPU hardware, then `scripts/push_to_hf.sh <user>/<space>`. Guide: [docs/DEPLOY_HUGGINGFACE.md](docs/DEPLOY_HUGGINGFACE.md) |
+| **Streamlit Community Cloud**, free, no Hugging Face needed | Main file `deploy/streamlit/streamlit_app.py`, light profile, secrets for the API key. Guide: [docs/DEPLOY_STREAMLIT_CLOUD.md](docs/DEPLOY_STREAMLIT_CLOUD.md) |
+| **Docker (Streamlit UI + API in one container)** | `docker build -t sentinel . && docker run -p 7860:7860 --env-file .env sentinel` |
+| **Docker Compose (API :8000 + UI :8501)** | `docker compose up --build` |
 
-Prompts live in `configs/prompts/*.md`, so you can tune agent behaviour without touching code.
+On Hugging Face the Space runs `app.py` (Gradio, in-process, no separate API server). Embeddings and the reranker use the ZeroGPU window
+when a GPU is available and fall back to CPU otherwise. With no API key set it runs the keyless offline demo.
+For any public deployment of the FastAPI service set `SENTINEL_PUBLIC_DEMO=1` to disable `/upload` and `/ingest`.
 
 ## Evaluation
 
@@ -122,7 +134,7 @@ fake LLM, so it only proves the harness works (and that SQL questions are unansw
 quality. Run `sentinel eval --mode all` with a real LLM to get meaningful numbers, then cite those.
 
 ## Testing
-`pytest` runs 49 offline tests (≈ 1 min): chunking, RRF math, hybrid retrieval, SQL/Python/calculator safety (including
+`pytest` runs 54 offline tests (≈ 1 min): chunking, RRF math, hybrid retrieval, SQL/Python/calculator safety (including
 attempted writes, imports and infinite loops), injection filtering, arXiv parsing, the full graph, the critic failure and
 recovery loop, max-loop warning banner, tool budgets, HITL approve/edit/reject, API endpoints including SSE streaming and
 approval round-trips, upload validation, and robustness to chatty/fenced JSON from LLMs.
@@ -133,21 +145,24 @@ configs/        settings.yaml, prompts/*.md
 data/raw/       sample knowledge base (5 UAV/defence-analytics notes)   data/sample.db  synthetic missions DB
 data/eval/      golden_set.jsonl
 src/sentinel/
-  graph.py state.py runner.py llm.py fake_llm.py config.py cli.py
+  graph.py state.py runner.py llm.py fake_llm.py config.py cli.py gpu.py (optional ZeroGPU dispatch)
   agents/       planner, supervisor, workers (researcher+analyst), tool_loop, writer, critic, memory_nodes
   tools/        kb_search, web_search, arxiv_search, sql_tool, python_sandbox, calculator, registry
   rag/          ingest (section-aware chunking), embeddings, store (Chroma), retriever (dense+BM25+RRF), reranker, query_rewrite
   memory/       checkpointer (short-term), semantic, episodic
-  guardrails/   injection_filter, budget
+  guardrails/   injection_filter, budget, rate_limit
   observability/tracing.py
   api/          FastAPI app + schemas
-ui/app.py       Streamlit        eval/run_eval.py   evaluation harness        tests/   49 tests
+app.py          Gradio UI (Hugging Face entry point)   requirements.txt   Space dependencies
+deploy/         streamlit/ (Community Cloud app + slim requirements), hf_static/ (landing page)
+ui/app.py       Streamlit        eval/run_eval.py   evaluation harness        tests/   54 tests
+start.sh        single-container entrypoint (API + Streamlit) used by the Docker image
 ```
 See `docs/ARCHITECTURE.md` for the design and `docs/INTERVIEW_GUIDE.md` for how to present it.
 
 ## Known limitations (read before claiming anything)
 - **Not exercised in the build environment** (no keys/network/GPU there): real Gemini/Groq/Ollama/Anthropic calls,
-  `sentence-transformers` models, DuckDuckGo/Tavily/arXiv network requests, Langfuse, RAGAS, and the Docker build.
+  `sentence-transformers` models, DuckDuckGo/Tavily/arXiv network requests, Langfuse and RAGAS. (CI now smoke-tests a slim Docker image, but not the full torch image.)
   Their code paths are small and isolated, but run them once yourself and fix any API drift before depending on them.
 - The Python sandbox is **best-effort hardening, not a security boundary**; do not expose it to untrusted users without
   container isolation (the compose file drops privileges but does not remove network access).

@@ -8,6 +8,7 @@ import requests
 import streamlit as st
 
 DEFAULT_API = os.getenv("SENTINEL_API_URL", "http://localhost:8000")
+PUBLIC_DEMO = os.getenv("SENTINEL_PUBLIC_DEMO", "").strip().lower() in {"1", "true", "yes", "on"}
 
 st.set_page_config(page_title="Sentinel", page_icon="🛰️", layout="wide")
 st.title("🛰️ Sentinel")
@@ -26,19 +27,22 @@ with st.sidebar:
     require_approval = st.toggle("Ask me to approve the plan first", value=False)
     st.divider()
     st.subheader("Knowledge base")
-    up = st.file_uploader("Add a document (PDF / MD / TXT)", type=["pdf", "md", "txt"])
-    if up is not None and st.button("Upload & ingest"):
-        try:
-            r = requests.post(f"{api}/upload", files={"file": (up.name, up.getvalue())}, timeout=300)
-            r.raise_for_status()
-            st.success(f"Ingested: {r.json()}")
-        except Exception as e:
-            st.error(f"Upload failed: {e}")
-    if st.button("Re-ingest data/raw"):
-        try:
-            st.success(requests.post(f"{api}/ingest", json={"reset": False}, timeout=300).json())
-        except Exception as e:
-            st.error(str(e))
+    if PUBLIC_DEMO:
+        st.info("Public demo: the knowledge base is read-only (5 UAV / defence-analytics notes + a synthetic missions DB).")
+    else:
+        up = st.file_uploader("Add a document (PDF / MD / TXT)", type=["pdf", "md", "txt"])
+        if up is not None and st.button("Upload & ingest"):
+            try:
+                r = requests.post(f"{api}/upload", files={"file": (up.name, up.getvalue())}, timeout=300)
+                r.raise_for_status()
+                st.success(f"Ingested: {r.json()}")
+            except Exception as e:
+                st.error(f"Upload failed: {e}")
+        if st.button("Re-ingest data/raw"):
+            try:
+                st.success(requests.post(f"{api}/ingest", json={"reset": False}, timeout=300).json())
+            except Exception as e:
+                st.error(str(e))
 
 
 # ---------------------------------------------------------------- helpers

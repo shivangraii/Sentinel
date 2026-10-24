@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel: self-verifying multi-agent research</title>
+<style>
+  :root { --bg:#ffffff; --fg:#14181f; --muted:#5b6472; --card:#f3f5f9; --line:#d9dee7; --accent:#2563eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f141b; --fg:#e8ecf2; --muted:#9aa5b5; --card:#18202b; --line:#2a3544; --accent:#6ea0ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 6px; }
+  p.lead { color: var(--muted); font-size: 1.08rem; margin: 0 0 22px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 28px; }
+  a.btn { padding: 9px 16px; border-radius: 8px; border:1px solid var(--line); color:var(--fg); text-decoration:none; background:var(--card); }
+  a.btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .flow { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin: 14px 0 28px; }
+  .step { padding: 8px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); font-size:.92rem; }
+  .arrow { color: var(--muted); }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-bottom: 28px; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--card); }
+  .card h3 { margin:0 0 4px; font-size:1rem; }
+  .card p { margin:0; color:var(--muted); font-size:.93rem; }
+  iframe { width:100%; height:760px; border:1px solid var(--line); border-radius:10px; background:var(--card); }
+  small { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>🛰️ Sentinel</h1>
+  <p class="lead">A research agent that doesn’t just answer, it audits itself: every sentence must cite evidence, and a critic verifies each claim before the report is returned.</p>
+
+  <div class="row">
+    <!-- TODO: replace both URLs before publishing -->
+    <a class="btn primary" href="https://YOUR-APP.streamlit.app" target="_blank" rel="noopener">Open the live app</a>
+    <a class="btn" href="https://github.com/shivangraii/Sentinel" target="_blank" rel="noopener">Source on GitHub</a>
+  </div>
+
+  <div class="flow" aria-label="Pipeline">
+    <span class="step">Plan</span><span class="arrow">→</span>
+    <span class="step">Research (KB · web · arXiv)</span><span class="arrow">+</span>
+    <span class="step">Analyse (SQL · Python)</span><span class="arrow">→</span>
+    <span class="step">Write with [E#] citations</span><span class="arrow">→</span>
+    <span class="step">Critic verifies claims</span><span class="arrow">↺</span>
+    <span class="step">Report + sources</span>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h3>Hybrid retrieval</h3><p>Dense + BM25 fused with Reciprocal Rank Fusion, then reranked.</p></div>
+    <div class="card"><h3>Self-verification</h3><p>Missing or invented citations are caught deterministically; failures trigger re-research.</p></div>
+    <div class="card"><h3>Human in the loop</h3><p>Pause after planning to approve, edit or reject the plan.</p></div>
+    <div class="card"><h3>Guardrails</h3><p>Read-only SQL, restricted Python, prompt-injection filtering, run budgets.</p></div>
+  </div>
+
+  <h2>Try it</h2>
+  <!-- TODO: replace YOUR-APP; ?embed=true hides Streamlit's chrome inside the frame -->
+  <iframe src="https://YOUR-APP.streamlit.app/?embed=true" title="Sentinel live app" loading="lazy"></iframe>
+  <p><small>The demo may take a minute to wake up if it has been idle. If the frame stays blank, use the “Open the live app” button.</small></p>
+</main>
+</body>
+</html>

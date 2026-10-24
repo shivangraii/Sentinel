@@ -23,3 +23,22 @@ jobs:
         run: pytest
       - name: Offline demo smoke test
         run: SENTINEL_STORAGE_DIR=/tmp/s sentinel demo
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build slim image (no torch; offline mode)
+        run: docker build --build-arg EXTRAS="ui" -t sentinel:ci .
+      - name: Smoke test (UI + API come up in one container)
+        run: |
+          docker run -d --name s -p 7860:7860 -e SENTINEL_OFFLINE=1 -e SENTINEL_PUBLIC_DEMO=1 sentinel:ci
+          for i in $(seq 1 40); do
+            curl -fs http://localhost:7860/_stcore/health && break || sleep 3
+          done
+          curl -fs http://localhost:7860/_stcore/health
+          docker exec s python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health').read().decode())"
+      - name: Logs on failure
+        if: failure()
+        run: docker logs s

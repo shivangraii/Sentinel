@@ -7,6 +7,7 @@ from typing import Protocol
 
 import numpy as np
 
+from sentinel import gpu
 from sentinel.config import Settings, get_settings
 from sentinel.rag.text import tokenize
 
@@ -57,16 +58,24 @@ class SentenceTransformerEmbedder:
                 'sentence-transformers not installed. Run: pip install "sentinel[embeddings]" '
                 "or set SENTINEL_EMBEDDINGS=hash"
             ) from e
-        self.model = SentenceTransformer(model_name)
+        self.model = SentenceTransformer(model_name, device="cpu")  # moved to GPU only inside a ZeroGPU window
         self.name = model_name
         self._bge = "bge" in model_name.lower()
+        self._key = f"embed:{model_name}"
+        gpu.register(self._key, self._encode)
+
+    def _encode(self, texts: list[str], on_gpu: bool) -> list[list[float]]:
+        return gpu.with_device(
+            self.model, on_gpu,
+            lambda: self.model.encode(texts, normalize_embeddings=True, show_progress_bar=False).tolist(),
+        )
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return self.model.encode(texts, normalize_embeddings=True, show_progress_bar=False).tolist()
+        return gpu.run(self._key, texts)
 
     def embed_query(self, text: str) -> list[float]:
         t = (_BGE_QUERY_PREFIX + text) if self._bge else text
-        return self.model.encode([t], normalize_embeddings=True, show_progress_bar=False)[0].tolist()
+        return gpu.run(self._key, [t])[0]
 
 
 @lru_cache(maxsize=4)
